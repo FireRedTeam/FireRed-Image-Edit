@@ -26,8 +26,7 @@
 
 
 ## 📰 News
-- 2026.02.10: We released FireRed-Image-Edit-1.0. Check out the [model page](https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0) and [demo](https://huggingface.co/spaces/FireRedTeam/FireRed-Image-Edit-1.0) for more details!
-
+- 2026.02.10: We released FireRed-Image-Edit-1.0. 
 ## 🎨 Showcase
 Some real outputs produced by FireRed-Image-Edit across genearl editing.
 <p align="center">
