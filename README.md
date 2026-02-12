@@ -271,7 +271,7 @@ The REDEdit-Bench dataset will be available soon.
       <td style="border:1px solid #ddd; padding:8px; text-align:center;"><b>4.55</b></td>
       <td style="border:1px solid #ddd; padding:8px; text-align:center;"><b>4.66</b></td>
       <td style="border:1px solid #ddd; padding:8px; text-align:center;"><b>4.34</b></td>
-      <td style="border:1px solid #ddd; padding:8px; text-align:center;"><b?4.75</b></td>
+      <td style="border:1px solid #ddd; padding:8px; text-align:center;"><b>4.75</b></td>
       <td style="border:1px solid #ddd; padding:8px; text-align:center;"><u>4.58</u></td>
       <td style="border:1px solid #ddd; padding:8px; text-align:center;"><b>4.45</b></td>
       <td style="border:1px solid #ddd; padding:8px; text-align:center;"><b>4.97</b></td>
