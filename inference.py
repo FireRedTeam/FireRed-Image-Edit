@@ -1,3 +1,5 @@
+"""FireRed-Image-Edit Inference Demo."""
+
 import argparse
 from pathlib import Path
 
