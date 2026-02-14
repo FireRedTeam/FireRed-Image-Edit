@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input_image",
         type=Path,
-        default=Path("./example/edit_example.png"),
+        default=Path("./examples/edit_example.png"),
         help="Path to the input image",
     )
     parser.add_argument(
