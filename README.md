@@ -39,7 +39,7 @@
 - 2026.02.10: We released the [Technical Report](https://github.com/FireRedTeam/FireRed-Image-Edit/blob/main/assets/FireRed_Image_Edit_1_0_Techinical_Report.pdf) of FireRed-Image-Edit-1.0. 
 
 ## 🏆 Evaluation Results
-FireRed-Image-Edit establishes a new state-of-the-art among open-source models on Imgedit, Gedit, and RedEdit, while surpassing or closed-source competitors in specific dimensions—a distinction further corroborated by human evaluations highlighting its superior prompt following and visual consistency.
+FireRed-Image-Edit establishes a new state-of-the-art among open-source models on Imgedit, Gedit, and RedEdit, while surpassing our closed-source competitors in specific dimensions—a distinction further corroborated by human evaluations highlighting its superior prompt following and visual consistency.
 <p align="center">
     <img src="./assets/eval_benchmark.png" width="600"/>
 <p>
@@ -49,7 +49,7 @@ FireRed-Image-Edit establishes a new state-of-the-art among open-source models o
 
 
 ## 🎨 Showcase
-Some real outputs produced by FireRed-Image-Edit across genearl editing.
+Some real outputs produced by FireRed-Image-Edit across general editing.
 <p align="center">
     <img src="./assets/showcase.png" width="800"/>
 <p> 
@@ -135,7 +135,7 @@ python inference.py \
 To better validate the capabilities of our model, we propose a benchmark called REDEdit-Bench. Our main goal is to build more diverse scenarios and editing instructions that better align with human language, enabling a more comprehensive evaluation of current editing models. We collected over 3,000 images from the internet, and after careful expert-designed selection, we constructed 1,673 bilingual (Chinese–English) editing pairs across 15 categories.
 
 ### Inference and Evaluation Code
-We provide the inference and evaluation code for REDEdit-Bench. Please refer to the [redbench_infer.py](./src/tools/redbench_infer.py) and [redbench_eval.py](./src/tools/redbench_eval.py) scripts in the `src/tools` directory for more details.
+We provide the inference and evaluation code for REDEdit-Bench. Please refer to the [redbench_infer.py](./tools/redbench_infer.py) and [redbench_eval.py](./tools/redbench_eval.py) scripts in the `tools` directory for more details.
 
 ### Benchmark Distribution
 The REDEdit-Bench dataset will be available soon.
