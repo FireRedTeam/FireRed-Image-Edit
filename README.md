@@ -4,9 +4,9 @@
 <p align="center">
   <a href="https://huggingface.co/FireRedTeam" target="_blank"><img alt="Hugging Face" src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-FireRedTeam-ffc107?color=ffc107&logoColor=white" style="display: inline-block;"/></a>
   <a href="https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0" target="_blank"><img alt="Hugging Face Model" src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-FireRed--Image--Edit--1.0-red" style="display: inline-block;"/></a>
-  <a href="https://huggingface.co/spaces/FireRedTeam/FireRed-Image-Edit-1.0" target="_blank"><img alt="Demo" src="https://img.shields.io/badge/%F0%9F%A4%97%20HF%20Demo-FireRed--Image--Edit--1.0-red" style="display: inline-block;"/></a>
-  <a href="https://modelscope.cn/models/FireRedTeam/FireRed-Image-Edit-1.0" target="_blank"><img alt="Demo" src="https://img.shields.io/badge/%F0%9F%A4%96%20ModelScope-FireRed--Image--Edit--1.0-624aff" style="display: inline-block;"/></a>
-  <a href="https://modelscope.cn/studios/FireRedTeam/FireRed-Image-Edit-1.0" target="_blank"><img alt="Demo" src="https://img.shields.io/badge/%F0%9F%A4%96%20MS%20Demo-FireRed--Image--Edit--1.0-624aff" style="display: inline-block;"/></a>
+  <a href="https://huggingface.co/spaces/FireRedTeam/FireRed-Image-Edit-1.0" target="_blank"><img alt="HF Demo" src="https://img.shields.io/badge/%F0%9F%A4%97%20HF%20Demo-FireRed--Image--Edit--1.0-red" style="display: inline-block;"/></a>
+  <a href="https://modelscope.cn/models/FireRedTeam/FireRed-Image-Edit-1.0" target="_blank"><img alt="ModelScope Model" src="https://img.shields.io/badge/%F0%9F%A4%96%20ModelScope-FireRed--Image--Edit--1.0-624aff" style="display: inline-block;"/></a>
+  <a href="https://modelscope.cn/studios/FireRedTeam/FireRed-Image-Edit-1.0" target="_blank"><img alt="MS Demo" src="https://img.shields.io/badge/%F0%9F%A4%96%20MS%20Demo-FireRed--Image--Edit--1.0-624aff" style="display: inline-block;"/></a>
   <a href='https://github.com/FireRedTeam/FireRed-Image-Edit'><img src='https://img.shields.io/badge/GitHub-Code-black'></a>
   <a href='https://www.apache.org/licenses/LICENSE-2.0'><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
   <a href="https://github.com/FireRedTeam/FireRed-Image-Edit/blob/main/assets/FireRed_Image_Edit_1_0_Techinical_Report.pdf" target="_blank"><img src="https://img.shields.io/badge/Report-b5212f.svg?logo=arxiv"></a>
@@ -28,7 +28,7 @@
 
 ## ✨ Key Features
 - **Strong Editing Performance**: FireRed-Image-Edit delivers leading open-source results with accurate instruction following, high image quality, and consistent visual coherence.
-- **Native Editing Capability**: Built directly from text-to-image foundation model and endowed with editing capabilities.
+- **Native Editing Capability from T2I Backbone**: Built upon an open-source text-to-image foundation model , we introduce editing ability through a full pipeline of **Pretrain**, **SFT**, and **RL**. This training paradigm is backbone-agnostic and can be applied to other T2I models(currently based on Qwen-Image for better community support). We will progressively open-source additional features, including self-developed FireRed T2I foundation model later.
 - **Text Style Preservation**: Maintains text styles with high fidelity, achieving performance comparable to closed-source solutions.
 - **Photo Restoration**: High-quality old photo restoration and enhancement.
 - **Multi-Image Editing**: Flexible editing of multiple images such as virtual try-on.
@@ -831,7 +831,7 @@ FireRed-Image-Edit  has not been specifically designed or comprehensively evalua
 
 ## 🤝 Acknowledgements
 
-We would like to thank the developers of the amazing open-source projects, including [Qwen-Image](https://github.com/QwenLM/Qwen-Image), [Diffusers](https://github.com/huggingface/diffusers) and [HuggingFace](https://huggingface.co)
+We would like to thank the developers of the amazing open-source projects, especially [Qwen-Image](https://github.com/QwenLM/Qwen-Image) for providing a powerful text-to-image foundation model, as well as [Diffusers](https://github.com/huggingface/diffusers) and [HuggingFace](https://huggingface.co).
 
 ## ⭐ Star History
 
