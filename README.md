@@ -35,6 +35,7 @@
 
 
 ## 📰 News
+- 2026.02.27: We provided FireRed-Image-Edit-1.0-ComfyUI workflow. Check more details on [Huggingface](https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0-ComfyUI)
 - 2026.02.14: We released FireRed-Image-Edit-1.0 model weights. Check more details on [Huggingface](https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0) and [ModelScope](https://modelscope.cn/models/FireRedTeam/FireRed-Image-Edit-1.0).
 - 2026.02.10: We released the [Technical Report](https://arxiv.org/abs/2602.13344) of FireRed-Image-Edit-1.0. 
 
