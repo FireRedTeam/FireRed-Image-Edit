@@ -167,6 +167,14 @@ agent/
 └── pipeline.py        # End-to-end orchestration pipeline
 ```
 
+## 🏋️ How to Train
+Training is a **two-step** process:
+
+1. **Extract VLM embeddings** — Run offline extraction on your image–text JSONL.
+2. **SFT training** — Train on the extracted embeddings (HSDP/FSDP, multi-node supported).
+
+→ Full details: [train/README.md](train/README.md) (data format, environment, commands).
+
 ## 📊 Benchmark
 To better validate the capabilities of our model, we propose a benchmark called REDEdit-Bench. Our main goal is to build more diverse scenarios and editing instructions that better align with human language, enabling a more comprehensive evaluation of current editing models. We collected over 3,000 images from the internet, and after careful expert-designed selection, we constructed 1,673 bilingual (Chinese–English) editing pairs across 15 categories.
 

@@ -46,7 +46,7 @@ torchrun --nproc_per_node=$GPUS_PER_NODE --nnodes $NNODES --node_rank $NODE_RANK
   /path/to/your/data.jsonl \
   --output_jsonl_dir /path/to/output_jsonl \
   --embeddings_save_dir /path/to/embeddings \
-  --model_path /path/to/Qwen-Image-Edit-2509 \
+  --model_path /path/to/FireRed-Image-Edit-1.0 \
   --batch_size 4
 ```
 
@@ -57,7 +57,7 @@ torchrun --nproc_per_node=$GPUS_PER_NODE --nnodes $NNODES --node_rank $NODE_RANK
 | `jsonl_path` | Input JSONL path | Required |
 | `--output_jsonl_dir` | Output JSONL directory (one file per rank) | Required |
 | `--embeddings_save_dir` | Directory to save embeddings | Required |
-| `--model_path` | Qwen2-VL / Qwen-Image model path | `/dev/shm/Qwen-Image` |
+| `--model_path` | FireRed-Image-Edit-1.0 model path | `/dev/shm/FireRed-Image-Edit-1.0` |
 | `--batch_size` | Batch size | 4 |
 | `--image_sample_size` | Image sampling size | 512 |
 | `--disable_inverse` | Disable inverse prompt | - |
@@ -95,7 +95,7 @@ accelerate launch --mixed_precision="bf16" --use_fsdp \
   --main_process_ip $MASTER_ADDR \
   --main_process_port $MASTER_PORT \
   -m src.sft \
-  --pretrained_model_name_or_path="/path/to/Qwen-Image-Edit-2509" \
+  --pretrained_model_name_or_path="/path/to/FireRed-Image-Edit-1.0" \
   --train_data_meta_dir="/path/to/your_meta_dir" \
   --train_data_weights="dataset_a=0.5,dataset_b=1.2,dataset_c=1.0" \
   --train_src_img_num_weights="0=1,1=1,2=1,3=0" \
