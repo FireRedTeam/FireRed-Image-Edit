@@ -35,6 +35,7 @@
 
 
 ## 📰 News
+- 2026.03.01: We offer a lightweight inference script (including quantization, db_cache, and static compilation), now requiring only 30GB VRAM and ~20s/sample. 🚀 Try it by simply running `python inference.py --optimized True`.
 - 2026.02.28: We released the [Train](https://github.com/FireRedTeam/FireRed-Image-Edit/tree/main/train), supporting HSDP/FSDP, Disaggregated Training, and Multi-Condition Aware Bucket Sampler.
 - 2026.02.27: We released the [Agent](#-agent) module for instruction rewriting, multi-image preprocessing, supporting automatic ROI detection, image stitching for editing with more than 3 images.
 - 2026.02.27: We provided FireRed-Image-Edit-1.0-ComfyUI workflow. Check more details on [Huggingface](https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0-ComfyUI)

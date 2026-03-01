@@ -1,11 +1,14 @@
 """FireRed-Image-Edit Inference Demo."""
 
+
 import argparse
 from pathlib import Path
+
 
 import torch
 from PIL import Image
 from diffusers import QwenImageEditPlusPipeline
+from utils.fast_pipeline import load_fast_pipeline
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,7 +26,7 @@ def parse_args() -> argparse.Namespace:
         "--input_image",
         type=Path,
         nargs="+",
-        default=[Path("./examples/edit_example.png")],
+        default=[Path("./examples/cola.png")],
         help="Path(s) to the input image(s). Supports 1-N images. "
              "When more than 3 images are given the agent will "
              "automatically crop and stitch them into 2-3 composites.",
@@ -37,13 +40,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--prompt",
         type=str,
-        default="在书本封面Python的下方，添加一行英文文字2nd Edition",
+        default="Transform the object into a realistic miniature product by carefully holding it between your thumb and forefinger.",
         help="Editing prompt",
     )
     parser.add_argument(
         "--seed",
         type=int,
-        default=43,
+        default=49,
         help="Random seed for generation",
     )
     parser.add_argument(
@@ -66,7 +69,12 @@ def parse_args() -> argparse.Namespace:
              "~512 words/characters via Gemini for richer context. "
              "Requires GEMINI_API_KEY environment variable.",
     )
+    parser.add_argument(
+        "--optimized", 
+        default=False,
+        help="Enable Int8, Cache, and Compile")
     return parser.parse_args()
+
 
 
 def load_pipeline(model_path: str) -> QwenImageEditPlusPipeline:
@@ -80,24 +88,30 @@ def load_pipeline(model_path: str) -> QwenImageEditPlusPipeline:
     return pipe
 
 
+
 def main() -> None:
     """Main entry point."""
     args = parse_args()
-
-    pipeline = load_pipeline(args.model_path)
+    if args.optimized:
+        pipeline = load_fast_pipeline(args.model_path)
+    else:
+        pipeline = load_pipeline(args.model_path)
     print("Pipeline loaded.")
-
+    
     # ── Load all input images ──
     images = [Image.open(p).convert("RGB") for p in args.input_image]
     prompt = args.prompt
     print(f"Loaded {len(images)} image(s).")
 
+
     # ── Agent: stitch + recaption when needed ──
     need_stitch = len(images) > 3
     need_recaption = args.recaption
 
+
     if need_stitch or need_recaption:
         from agent import AgentPipeline
+
 
         agent = AgentPipeline(verbose=True)
         agent_result = agent.run(
@@ -110,6 +124,7 @@ def main() -> None:
         print(f"Agent produced {len(images)} image(s).")
         print(f"Rewritten prompt: {prompt[:200]}{'…' if len(prompt) > 200 else ''}")
 
+
     inputs = {
         "image": images,
         "prompt": prompt,
@@ -120,13 +135,29 @@ def main() -> None:
         "num_images_per_prompt": 1,
     }
 
+
+    if args.optimized:
+        print("NOTE: The first inference after compilation may take 1-2 minutes.")
+
+
     with torch.inference_mode():
         result = pipeline(**inputs)
+
 
     output_image = result.images[0]
     output_image.save(args.output_image)
 
+
     print("Image saved at:", args.output_image.resolve())
+    
+    # ── Replace with the desired case or scenario based on your specific needs ── 
+    if args.optimized:
+        print("Subsequent runs will be significantly faster. Enjoy~")
+        with torch.inference_mode():
+            result = pipeline(**inputs)
+        output_image = result.images[0]
+        output_image.save(args.output_image)
+
 
 
 if __name__ == "__main__":

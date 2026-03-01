@@ -4,3 +4,5 @@ diffusers
 accelerate
 google-generativeai
 tqdm
+cache_dit
+optimum-quanto
