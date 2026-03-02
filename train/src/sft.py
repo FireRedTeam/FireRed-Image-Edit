@@ -33,7 +33,6 @@ from glob import glob
 
 from .utils.other import linear_decay
 from .utils.image_utils import save_image
-# from .accelerate_mdf.accelerator_mdf import AcceleratorMDF
 from .utils.log_utils import get_logger, DistributedColoredFormatter, get_dist_prefix, get_default_log_level, log_once
 
 
@@ -119,9 +118,6 @@ def sft(
     # ===================== 设置随机种子 =====================
     if args.seed is not None:
         set_seed(args.seed)
-        torch_rng = torch.Generator(accelerator.device).manual_seed(args.seed + accelerator.process_index)
-    else:
-        torch_rng = None
 
     # ===================== 模型初始化 =====================
     log_once(logger, logging.INFO, "Loading model via model_provider...")
@@ -133,7 +129,7 @@ def sft(
 
     # ===================== 数据加载 =====================
     log_once(logger, logging.INFO, "Building train dataloader (process_index=%s)...", accelerator.process_index)
-    train_dataloader = data_provider_func(args, accelerator.process_index, accelerator.device)
+    train_dataloader = data_provider_func(args, accelerator.process_index, accelerator.num_processes)
 
     # ===================== 优化器初始化 =====================
     # Enable TF32 for faster training on Ampere GPUs
@@ -182,8 +178,8 @@ def sft(
                 in_already.append(name)
                 high_lr_flag = True
                 trainable_params_optim[0]['params'].append(param)
-                if accelerator.is_main_process:
-                    logger.info("Set %s to lr: %s", name, args.learning_rate)
+                # if accelerator.is_main_process:
+                    # logger.debug("Set %s to lr: %s", name, args.learning_rate)
                 break
         if high_lr_flag:
             continue
@@ -191,8 +187,8 @@ def sft(
             if trainable_module_name in name:
                 in_already.append(name)
                 trainable_params_optim[1]['params'].append(param)
-                if accelerator.is_main_process:
-                    logger.info("Set %s to lr: %s", name, args.learning_rate / 2)
+                # if accelerator.is_main_process:
+                    # logger.debug("Set %s to lr: %s", name, args.learning_rate / 2)
                 break
 
     if args.use_came:
@@ -230,14 +226,9 @@ def sft(
     )
 
     # Prepare everything with our `accelerator` ==============================================================================
-    if not args.streaming:
-        transformer3d, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-            transformer3d, optimizer, train_dataloader, lr_scheduler
-        )
-    else:
-        transformer3d, optimizer, lr_scheduler = accelerator.prepare(
-            transformer3d, optimizer, lr_scheduler
-        )
+    transformer3d, optimizer, lr_scheduler = accelerator.prepare(
+        transformer3d, optimizer, lr_scheduler
+    )
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     if args.streaming:
@@ -261,20 +252,18 @@ def sft(
                 accelerate_state_dict = {k: v.to(dtype=weight_dtype) for k, v in accelerate_state_dict.items()}
                 save_file(accelerate_state_dict, safetensor_save_path, metadata={"format": "pt"})
 
-            if args.streaming:
-                with open(os.path.join(output_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "wb") as file:
-                    pickle.dump([train_dataloader.state_dict(), epoch], file)
+            with open(os.path.join(output_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "wb") as file:
+                pickle.dump([train_dataloader.state_dict(), epoch], file)
 
         def load_model_hook(models, input_dir):
-            if args.streaming:
-                with open(os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "rb") as file:
-                    state_dict, first_epoch = pickle.load(file)
-                    train_dataloader.load_state_dict(state_dict)
-                    log_once(logger, logging.INFO,
-                        "Load dataloader state dict and first_epoch=%s from %s",
-                        first_epoch,
-                        os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"),
-                    )
+            with open(os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "rb") as file:
+                state_dict, first_epoch = pickle.load(file)
+                train_dataloader.load_state_dict(state_dict)
+                log_once(logger, logging.INFO,
+                    "Load dataloader state dict and first_epoch=%s from %s",
+                    first_epoch,
+                    os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"),
+                )
     else:
         # create custom saving & loading hooks so that `accelerator.save_state(...)` serializes in a nice format
         def save_model_hook(models, weights, output_dir):
@@ -282,9 +271,8 @@ def sft(
                 models[0].save_pretrained(os.path.join(output_dir, "transformer"))
                 weights.pop()
 
-            if args.streaming:
-                with open(os.path.join(output_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "wb") as file:
-                    pickle.dump([train_dataloader.state_dict(), epoch], file)
+            with open(os.path.join(output_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "wb") as file:
+                pickle.dump([train_dataloader.state_dict(), epoch], file)
 
         def load_model_hook(models, input_dir):
             for i in range(len(models)):
@@ -300,15 +288,14 @@ def sft(
                 model.load_state_dict(load_model.state_dict())
                 del load_model
 
-            if args.streaming:
-                with open(os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "rb") as file:
-                    state_dict, first_epoch = pickle.load(file)
-                    train_dataloader.load_state_dict(state_dict)
-                    log_once(logger, logging.INFO,
-                        "Load dataloader state dict and first_epoch=%s from %s",
-                        first_epoch,
-                        os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"),
-                    )
+            with open(os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "rb") as file:
+                state_dict, first_epoch = pickle.load(file)
+                train_dataloader.load_state_dict(state_dict)
+                log_once(logger, logging.INFO,
+                    "Load dataloader state dict and first_epoch=%s from %s",
+                    first_epoch,
+                    os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"),
+                )
                 
     accelerator.register_save_state_pre_hook(save_model_hook)
     accelerator.register_load_state_pre_hook(load_model_hook)
@@ -391,10 +378,10 @@ def sft(
             if isinstance(batch, dict) and batch == {}:
                 log_once(logger, logging.WARNING, "Empty batch encountered; skipping.")
                 continue
-            if args.streaming:
-                for key, value in batch.items():
-                    if isinstance(value, torch.Tensor):
-                        batch[key] = value.to(accelerator.device)
+            
+            for key, value in batch.items():
+                if isinstance(value, torch.Tensor):
+                    batch[key] = value.to(accelerator.device)
 
             # Data batch sanity check
             if epoch == first_epoch and step == 0:
@@ -420,14 +407,14 @@ def sft(
             with accelerator.accumulate(transformer3d):
                 loss = forward_step(
                     args, 
+                    accelerator.process_index,
                     transformer3d, 
                     vae, 
                     text_encoder, 
                     extra_modules, 
                     batch, 
                     weight_dtype, 
-                    accelerator.device, 
-                    torch_rng
+                    accelerator.device,
                 )
 
                 # Gather the losses across all processes for logging (if we use distributed training).

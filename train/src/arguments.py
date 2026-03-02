@@ -201,7 +201,13 @@ def parse_args(extra_parser=None):
         default=2,
         help="每个 worker 预取的 sample 数",
     )
-    parser.add_argument("--sync_text_encoder", action="store_true", help="是否在 dataloader 内同步预计算 text encoder 输出，暂不支持")
+    parser.add_argument(
+        "--condition_encoder_mode",
+        type=str,
+        default="offline",
+        choices=["offline", "sync", "online"],
+        help="条件输入的 encoder 模式，可选 offline（离线编码） / sync（在线同步编码） / online（在线异步编码）"
+    )
     parser.add_argument("--enable_inverse", action="store_true", help="是否在数据集中启用 inverse captions")
 
     # ===================== VAE 与流水线 =====================
@@ -268,6 +274,32 @@ def parse_args(extra_parser=None):
 
     # ===================== 流式 / 其他 =====================
     parser.add_argument("--streaming", action="store_true", help="是否使用流式数据模式")
+
+    # ===================== LoRA（仅 lora.py 使用） =====================
+    parser.add_argument(
+        "--lora_r",
+        type=int,
+        default=0,
+        help="LoRA rank；>0 时启用 LoRA 训练（仅 lora.py）",
+    )
+    parser.add_argument(
+        "--lora_alpha",
+        type=float,
+        default=None,
+        help="LoRA alpha 缩放；默认等于 lora_r",
+    )
+    parser.add_argument(
+        "--lora_dropout",
+        type=float,
+        default=0.0,
+        help="LoRA dropout",
+    )
+    parser.add_argument(
+        "--lora_target_modules",
+        nargs="+",
+        default=None,
+        help="LoRA 注入的模块名（如 to_q, to_v）；默认由 impl_module 决定",
+    )
 
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))

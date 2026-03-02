@@ -1,7 +1,6 @@
 """
 使用 QwenVL 从 Jsonl 抽取多模态 embedding，支持分布式与异步保存。
 """
-import math
 import os
 import sys
 import requests
@@ -22,24 +21,12 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from transformers import Qwen2_5_VLForConditionalGeneration, Qwen2VLProcessor
 
+from .utils.image_utils import load_and_resize_image_for_condition
 
 WORLD_SIZE = int(os.environ.get("WORLD_SIZE", 1))
 RANK = int(os.environ.get("RANK", 0))
 LOCAL_RANK = int(os.environ.get("LOCAL_RANK", 0))
 DEVICE = torch.device("cuda", LOCAL_RANK)
-
-ASPECT_RATIO_512 = {
-    '0.25': [256.0, 1024.0], '0.26': [256.0, 992.0], '0.27': [256.0, 960.0], '0.28': [256.0, 928.0],
-    '0.32': [288.0, 896.0], '0.33': [288.0, 864.0], '0.35': [288.0, 832.0], '0.4': [320.0, 800.0],
-    '0.42': [320.0, 768.0], '0.48': [352.0, 736.0], '0.5': [352.0, 704.0], '0.52': [352.0, 672.0],
-    '0.57': [384.0, 672.0], '0.6': [384.0, 640.0], '0.68': [416.0, 608.0], '0.72': [416.0, 576.0],
-    '0.78': [448.0, 576.0], '0.82': [448.0, 544.0], '0.88': [480.0, 544.0], '0.94': [480.0, 512.0],
-    '1.0': [512.0, 512.0], '1.07': [512.0, 480.0], '1.13': [544.0, 480.0], '1.21': [544.0, 448.0],
-    '1.29': [576.0, 448.0], '1.38': [576.0, 416.0], '1.46': [608.0, 416.0], '1.67': [640.0, 384.0],
-    '1.75': [672.0, 384.0], '2.0': [704.0, 352.0], '2.09': [736.0, 352.0], '2.4': [768.0, 320.0],
-    '2.5': [800.0, 320.0], '2.89': [832.0, 288.0], '3.0': [864.0, 288.0], '3.11': [896.0, 288.0],
-    '3.62': [928.0, 256.0], '3.75': [960.0, 256.0], '3.88': [992.0, 256.0], '4.0': [1024.0, 256.0]
-}
 
 logger.remove()
 logger = logger.bind(rank=f"RANK {RANK}")
@@ -49,17 +36,6 @@ logger.add(
     format="<green>{extra[rank]}</green> | <cyan>{time:YYYY-MM-DD HH:mm:ss}</cyan> | <level>{level}</level> | <level>{message}</level>",
 )
 
-def get_closest_ratio(height: float, width: float, ratios: dict = ASPECT_RATIO_512):
-    aspect_ratio = height / width
-    closest_ratio = min(ratios.keys(), key=lambda r: abs(float(r) - aspect_ratio))
-    return ratios[closest_ratio], float(closest_ratio)
-
-def calculate_dimensions(target_area: float, ratio: float) -> Tuple[int, int]:
-    width = math.sqrt(target_area * ratio)
-    height = width / ratio
-    width = round(width / 32) * 32
-    height = round(height / 32) * 32
-    return width, height
 
 class JsonlImageDataset(Dataset):
     DEFAULT_SYSTEM_PROMPT = "Describe the key features of the input image (color, shape, size, texture, objects, background), then explain how the user's text instruction should alter or modify the image. Generate a new image that meets the user's requirements while maintaining consistency with the original input where appropriate."
@@ -103,60 +79,12 @@ class JsonlImageDataset(Dataset):
         return len(self.df)
 
     def _load_and_resize_image(self, src_image_paths: List[str], tgt_image_path: str) -> Tuple[List[Image.Image], Image.Image, List[Dict], Dict]:
-        def _fetch_image(image_path):
-            if image_path.startswith('http'):
-                response = requests.get(image_path)
-                image = Image.open(BytesIO(response.content))
-                if image.mode != "RGB":
-                    image = image.convert("RGB")
-            else:
-                image = Image.open(image_path)
-                if image.mode != "RGB":
-                    image = image.convert("RGB")
-            return image
-
-        src_images = []
-        for src_image_path in src_image_paths:
-            src_image = _fetch_image(src_image_path)
-            src_images.append(src_image)
-
-        tgt_image = _fetch_image(tgt_image_path)
-
-        source_image_size = [{"width": im.size[0], "height": im.size[1]} for im in src_images]
-        edit_image_size = {"width": tgt_image.size[0], "height": tgt_image.size[1]}
-
-        w, h = tgt_image.size
-        aspect_ratio_sample_size = {
-            k: [x / 512 * self.image_sample_size for x in ASPECT_RATIO_512[k]]
-            for k in ASPECT_RATIO_512
-        }
-        closest_size, _ = get_closest_ratio(h, w, ratios=aspect_ratio_sample_size)
-        closest_size = [int(x / 16) * 16 for x in closest_size]
-        closest_size = list(map(int, closest_size))
-        if closest_size[0] / h > closest_size[1] / w:
-            resize_size = (closest_size[0], int(w * closest_size[0] / h))
-        else:
-            resize_size = (int(h * closest_size[1] / w), closest_size[1])
-
-        source_transform = transforms.Compose([
-            transforms.Resize(resize_size, interpolation=transforms.InterpolationMode.BILINEAR),
-            transforms.CenterCrop(closest_size),
-        ])
-
-        closest_size_tgt = source_transform(tgt_image)
-        closest_size_srcs = [source_transform(im) for im in src_images]
-
-        width, height = closest_size_tgt.size
-        aspect_ratio = width / height
-        new_width, new_height = calculate_dimensions(self.condition_image_size, aspect_ratio)
-
-
-        condition_tgt_image = closest_size_tgt.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        condition_src_images = [
-            im.resize((new_width, new_height), Image.Resampling.LANCZOS) for im in closest_size_srcs
-        ]
-
-        return condition_src_images, condition_tgt_image, source_image_size, edit_image_size
+        return load_and_resize_image_for_condition(
+            src_image_paths,
+            tgt_image_path,
+            image_sample_size=self.image_sample_size,
+            condition_image_size=self.condition_image_size,
+        )
     
     def _extract_instructions(self, row: Dict) -> Dict[str, str]:
         return {

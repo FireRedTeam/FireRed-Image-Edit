@@ -7,7 +7,7 @@ from diffusers import DDIMScheduler, FlowMatchEulerDiscreteScheduler
 from diffusers.models.autoencoders.autoencoder_kl_qwenimage import AutoencoderKLQwenImage
 from diffusers.models.transformers.transformer_qwenimage import QwenImageTransformer2DModel
 from transformers import Qwen2_5_VLForConditionalGeneration, Qwen2Tokenizer, Qwen2VLProcessor
-from .discrete_sampler import DiscreteSampling
+from .utils.discrete_sampler import DiscreteSampling
 from .utils.log_utils import get_logger, log_once
 
 logger = get_logger(__name__)
@@ -69,10 +69,11 @@ def model_provider_impl(
                 break
 
     # 可选：同步加载 Text Encoder（用于在线编码），否则使用预提取的 embedding
-    if extra_args.sync_text_encoder:
+    if extra_args.condition_encoder_mode == "sync":
         # Get Tokenizer
         tokenizer = Qwen2Tokenizer.from_pretrained(
-            extra_args.pretrained_model_name_or_path, subfolder="tokenizer"
+            extra_args.pretrained_model_name_or_path, 
+            subfolder="tokenizer"
         )
 
         # Get processor
@@ -83,12 +84,14 @@ def model_provider_impl(
 
         # Get text encoder
         text_encoder = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            extra_args.pretrained_model_name_or_path, subfolder="text_encoder", torch_dtype=weight_dtype
+            extra_args.pretrained_model_name_or_path, 
+            subfolder="text_encoder", 
+            torch_dtype=weight_dtype
         )
         text_encoder = text_encoder.eval()
         text_encoder.requires_grad_(False)
         text_encoder.to(device)
-        log_once(logger, logging.INFO, "Text encoder loaded (sync_text_encoder=True).")
+        log_once(logger, logging.INFO, "Text encoder loaded (condition_encoder_mode=sync).")
     else:
         tokenizer = None
         processor = None
