@@ -1,3 +1,4 @@
+# Copyright (c) 2025 FireRed-Image-Edit. All rights reserved.
 """
 模型构建：加载 VAE、Transformer、可选 Text Encoder 与 Scheduler，并返回供 SFT 使用的组件。
 """

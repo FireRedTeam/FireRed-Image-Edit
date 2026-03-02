@@ -1,3 +1,4 @@
+# Copyright (c) 2025 FireRed-Image-Edit. All rights reserved.
 """
 使用 QwenVL 从 Jsonl 抽取多模态 embedding，支持分布式与异步保存。
 """

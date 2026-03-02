@@ -1,3 +1,4 @@
+# Copyright (c) 2025 FireRed-Image-Edit. All rights reserved.
 """
 数据提供：从 meta 目录加载 jsonl 标注、按 task/宽高比分桶、构建 DataLoader。
 """

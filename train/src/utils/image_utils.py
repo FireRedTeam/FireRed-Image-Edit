@@ -1,3 +1,4 @@
+# Copyright (c) 2025 FireRed-Image-Edit. All rights reserved.
 import gc
 import inspect
 import math

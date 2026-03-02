@@ -1,3 +1,4 @@
+# Copyright (c) 2025 FireRed-Image-Edit. All rights reserved.
 """
 前向与损失：准备 latent、噪声与条件，调用 Transformer 预测 flow target，计算加权 MSE loss。
 """

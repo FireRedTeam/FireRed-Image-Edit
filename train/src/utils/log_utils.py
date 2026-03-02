@@ -1,3 +1,4 @@
+# Copyright (c) 2025 FireRed-Image-Edit. All rights reserved.
 # Copyright (c) REDEdit. Logging utilities for multi-process / multi-node training.
 """
 分布式训练友好的彩色日志工具。
