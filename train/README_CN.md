@@ -126,7 +126,7 @@ accelerate launch --mixed_precision="bf16" --use_fsdp \
 | `--train_data_weights` | 各 task 采样权重，格式：`task1=w1,task2=w2`，未列出的 task 不参与训练 |
 | `--train_src_img_num_weights` | 按「源图数量」加权，格式：`0=w0,1=w1,2=w2,3=w3`（0/1/2/3 张源图） |
 
-按需调整 `train_data_weights` 中的数据集名称与权重即可实现自己的多数据集混合训练。多机训练时需配置环境变量 `WORLD_SIZE`、`RANK`、`MASTER_ADDR`、`MASTER_PORT`，更多示例见 `examples/train.sh`。
+在 `train_data_weights` 中填入你的任务名（与 `train_data_meta_dir` 下子目录名一致）及所需采样权重即可；仅在此列出的任务会参与训练。更多可运行脚本见 `examples/`（如 `examples/train.sh`），完整训练参数见 `src/arguments.py`。多机训练时需配置环境变量 `WORLD_SIZE`、`RANK`、`MASTER_ADDR`、`MASTER_PORT`。
 
 ---
 
