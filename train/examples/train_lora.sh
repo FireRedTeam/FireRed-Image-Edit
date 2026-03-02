@@ -24,13 +24,7 @@ DISTRIBUTED_ARGS="
     --main_process_port $MASTER_PORT
 "
 
-accelerate launch --mixed_precision="bf16" \
-  --num_processes $((GPUS_PER_NODE * NNODES)) \
-  --num_machines $NNODES \
-  --machine_rank $NODE_RANK \
-  --main_process_ip $MASTER_ADDR \
-  --main_process_port $MASTER_PORT \
-  -m src.lora \
+accelerate launch --mixed_precision="bf16" $DISTRIBUTED_ARGS -m src.sft \
   --pretrained_model_name_or_path="/path/to/FireRed-Image-Edit-1.0" \
   --train_data_meta_dir="/path/to/your_meta_dir" \
   --train_data_weights="dataset_a=0.5,dataset_b=1.2,dataset_c=1.0" \
@@ -44,11 +38,15 @@ accelerate launch --mixed_precision="bf16" \
   --lr_scheduler="constant_with_warmup" \
   --lr_warmup_steps=100 \
   --checkpointing_steps=100 \
-  --output_dir="/path/to/lora_ckpts" \
+  --output_dir="/path/to/ckpts_lora" \
   --gradient_checkpointing \
   --mixed_precision="bf16" \
   --adam_weight_decay=3e-2 \
+  --adam_epsilon=1e-10 \
   --max_grad_norm=0.05 \
-  --uniform_sampling \
-  --lora_r=8 \
-  --lora_alpha=8
+  --condition_encoder_mode="sync" \
+  --use_peft_lora \
+  --lora_r 128 \
+  --lora_alpha 128 \
+  --lora_dropout 0.0 \
+  --lora_target_modules to_q,to_k,to_v,add_q_proj,add_k_proj,add_v_proj,to_out.0,to_add_out,img_mlp.net.2,img_mod.1,txt_mlp.net.2,txt_mod.1

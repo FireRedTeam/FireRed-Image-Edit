@@ -277,29 +277,39 @@ def parse_args(extra_parser=None):
 
     # ===================== LoRA（仅 lora.py 使用） =====================
     parser.add_argument(
-        "--lora_r",
-        type=int,
-        default=0,
-        help="LoRA rank；>0 时启用 LoRA 训练（仅 lora.py）",
+        "--use_peft_lora", 
+        action="store_true", 
+        help="是否使用 PEFT LoRA 进行微调"
     )
     parser.add_argument(
-        "--lora_alpha",
-        type=float,
-        default=None,
-        help="LoRA alpha 缩放；默认等于 lora_r",
+        "--lora_r", 
+        type=int, 
+        default=32, 
+        help="LoRA rank (推荐值: 8, 16, 32, 64)"
     )
     parser.add_argument(
-        "--lora_dropout",
-        type=float,
-        default=0.0,
-        help="LoRA dropout",
+        "--lora_alpha", 
+        type=int, 
+        default=32, 
+        help="LoRA alpha scaling factor (通常设置为与 lora_r 相同或 2 倍)"
     )
     parser.add_argument(
-        "--lora_target_modules",
-        nargs="+",
-        default=None,
-        help="LoRA 注入的模块名（如 to_q, to_v）；默认由 impl_module 决定",
+        "--lora_dropout", 
+        type=float, 
+        default=0.0, 
+        help="LoRA dropout rate"
     )
+    parser.add_argument(
+        "--lora_target_modules", 
+        type=str, 
+        default="to_q,to_k,to_v,add_q_proj,add_k_proj,add_v_proj,to_out.0,to_add_out,img_mlp.net.2,img_mod.1,txt_mlp.net.2,txt_mod.1",
+        help="LoRA target modules, 逗号分隔. 默认参考 DiffSynth-Studio 的配置"
+    )
+    parser.add_argument(
+        "--lora_path", type=str, default=None, 
+        help="预训练 LoRA 权重路径 (用于继续训练或推理)"
+    )
+
 
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
