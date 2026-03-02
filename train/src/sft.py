@@ -23,7 +23,7 @@ from accelerate import Accelerator, FullyShardedDataParallelPlugin
 from accelerate.parallelism_config import ParallelismConfig
 from accelerate.logging import get_logger as accelerate_get_logger
 from accelerate.state import AcceleratorState
-from accelerate.utils import ProjectConfiguration, set_seed, DataLoaderConfiguration
+from accelerate.utils import ProjectConfiguration, set_seed, DataLoaderConfiguration, DistributedDataParallelKwargs
 from diffusers.optimization import get_scheduler
 from einops import rearrange
 from PIL import Image
@@ -33,7 +33,6 @@ from glob import glob
 
 from .utils.other import linear_decay
 from .utils.image_utils import save_image
-# from .accelerate_mdf.accelerator_mdf import AcceleratorMDF
 from .utils.log_utils import get_logger, DistributedColoredFormatter, get_dist_prefix, get_default_log_level, log_once
 
 
@@ -48,12 +47,16 @@ def sft(
     logging_dir = os.path.join(args.output_dir, args.logging_dir)
     accelerator_project_config = ProjectConfiguration(project_dir=args.output_dir, logging_dir=logging_dir)
 
+    use_peft_lora = getattr(args, "use_peft_lora", False)
+    ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=use_peft_lora)
+
     accelerator = Accelerator(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision,
         log_with=args.report_to,
         project_config=accelerator_project_config,
-        dataloader_config=DataLoaderConfiguration(dispatch_batches=False)
+        dataloader_config=DataLoaderConfiguration(dispatch_batches=False),
+        kwargs_handlers=[ddp_kwargs],
     )
 
     # 配置根 logger 为带分布式前缀的彩色格式，便于多进程/多机阅读
@@ -87,6 +90,9 @@ def sft(
         fsdp_stage = 0
         log_once(logger, logging.INFO, "FSDP/HSDP is not enabled.")
 
+    if use_peft_lora and fsdp_plugin is not None:
+        log_once(logger, logging.WARNING, "LoRA 训练建议不使用 FSDP；当前已启用 FSDP，保存时将仅保存 adapter 权重。")
+
     if accelerator.is_main_process:
         writer = SummaryWriter(log_dir=logging_dir)
 
@@ -119,9 +125,6 @@ def sft(
     # ===================== 设置随机种子 =====================
     if args.seed is not None:
         set_seed(args.seed)
-        torch_rng = torch.Generator(accelerator.device).manual_seed(args.seed + accelerator.process_index)
-    else:
-        torch_rng = None
 
     # ===================== 模型初始化 =====================
     log_once(logger, logging.INFO, "Loading model via model_provider...")
@@ -131,9 +134,12 @@ def sft(
         transformer3d.enable_gradient_checkpointing()
         log_once(logger, logging.INFO, "Gradient checkpointing enabled.")
 
+    if use_peft_lora and getattr(args, "lora_r", 0) <= 0:
+        raise ValueError("LoRA 训练请设置 --lora_r > 0")
+
     # ===================== 数据加载 =====================
     log_once(logger, logging.INFO, "Building train dataloader (process_index=%s)...", accelerator.process_index)
-    train_dataloader = data_provider_func(args, accelerator.process_index, accelerator.device)
+    train_dataloader = data_provider_func(args, accelerator.process_index, accelerator.num_processes)
 
     # ===================== 优化器初始化 =====================
     # Enable TF32 for faster training on Ampere GPUs
@@ -168,49 +174,67 @@ def sft(
         optimizer_cls = torch.optim.AdamW
 
     trainable_params = list(filter(lambda p: p.requires_grad, transformer3d.parameters()))
-    trainable_params_optim = [
-        {'params': [], 'lr': args.learning_rate},
-        {'params': [], 'lr': args.learning_rate / 2},
-    ]
-    in_already = []
-    for name, param in transformer3d.named_parameters():
-        high_lr_flag = False
-        if name in in_already:
-            continue
-        for trainable_module_name in args.trainable_modules:
-            if trainable_module_name in name:
-                in_already.append(name)
-                high_lr_flag = True
-                trainable_params_optim[0]['params'].append(param)
-                if accelerator.is_main_process:
-                    logger.info("Set %s to lr: %s", name, args.learning_rate)
-                break
-        if high_lr_flag:
-            continue
-        for trainable_module_name in args.trainable_modules_low_learning_rate:
-            if trainable_module_name in name:
-                in_already.append(name)
-                trainable_params_optim[1]['params'].append(param)
-                if accelerator.is_main_process:
-                    logger.info("Set %s to lr: %s", name, args.learning_rate / 2)
-                break
 
-    if args.use_came:
-        optimizer = optimizer_cls(
-            trainable_params_optim,
-            lr=args.learning_rate,
-            # weight_decay=args.adam_weight_decay,
-            betas=(0.9, 0.999, 0.9999), 
-            eps=(1e-30, 1e-16)
-        )
+    if use_peft_lora:
+        trainable_params = [p for p in transformer3d.parameters() if p.requires_grad]
+        if args.use_came:
+            optimizer = optimizer_cls(
+                trainable_params,
+                lr=args.learning_rate,
+                betas=(0.9, 0.999, 0.9999),
+                eps=(1e-30, 1e-16),
+            )
+        else:
+            optimizer = optimizer_cls(
+                trainable_params,
+                lr=args.learning_rate,
+                betas=(args.adam_beta1, args.adam_beta2),
+                weight_decay=args.adam_weight_decay,
+                eps=args.adam_epsilon,
+            )
     else:
-        optimizer = optimizer_cls(
-            trainable_params_optim,
-            lr=args.learning_rate,
-            betas=(args.adam_beta1, args.adam_beta2),
-            weight_decay=args.adam_weight_decay,
-            eps=args.adam_epsilon,
-        )
+        trainable_params_optim = [
+            {'params': [], 'lr': args.learning_rate},
+            {'params': [], 'lr': args.learning_rate / 2},
+        ]
+        in_already = []
+        for name, param in transformer3d.named_parameters():
+            high_lr_flag = False
+            if name in in_already:
+                continue
+            for trainable_module_name in args.trainable_modules:
+                if trainable_module_name in name:
+                    in_already.append(name)
+                    high_lr_flag = True
+                    trainable_params_optim[0]['params'].append(param)
+                    # if accelerator.is_main_process:
+                        # logger.debug("Set %s to lr: %s", name, args.learning_rate)
+                    break
+            if high_lr_flag:
+                continue
+            for trainable_module_name in args.trainable_modules_low_learning_rate:
+                if trainable_module_name in name:
+                    in_already.append(name)
+                    trainable_params_optim[1]['params'].append(param)
+                    # if accelerator.is_main_process:
+                        # logger.debug("Set %s to lr: %s", name, args.learning_rate / 2)
+                    break
+        if args.use_came:
+            optimizer = optimizer_cls(
+                trainable_params_optim,
+                lr=args.learning_rate,
+                # weight_decay=args.adam_weight_decay,
+                betas=(0.9, 0.999, 0.9999),
+                eps=(1e-30, 1e-16)
+            )
+        else:
+            optimizer = optimizer_cls(
+                trainable_params_optim,
+                lr=args.learning_rate,
+                betas=(args.adam_beta1, args.adam_beta2),
+                weight_decay=args.adam_weight_decay,
+                eps=args.adam_epsilon,
+            )
 
 
     if not args.streaming:
@@ -230,14 +254,9 @@ def sft(
     )
 
     # Prepare everything with our `accelerator` ==============================================================================
-    if not args.streaming:
-        transformer3d, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-            transformer3d, optimizer, train_dataloader, lr_scheduler
-        )
-    else:
-        transformer3d, optimizer, lr_scheduler = accelerator.prepare(
-            transformer3d, optimizer, lr_scheduler
-        )
+    transformer3d, optimizer, lr_scheduler = accelerator.prepare(
+        transformer3d, optimizer, lr_scheduler
+    )
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     if args.streaming:
@@ -250,8 +269,40 @@ def sft(
         # Afterwards we recalculate our number of training epochs
         args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
 
-    # ===================== 保存/加载 hook（FSDP 与普通模式不同） =====================
-    if fsdp_stage != 0:
+    # ===================== 保存/加载 hook（LoRA / FSDP / 普通模式） =====================
+    if use_peft_lora:
+        def save_model_hook(models, weights, output_dir):
+            if accelerator.is_main_process:
+                model = accelerator.unwrap_model(models[0]) if hasattr(accelerator, "unwrap_model") else models[0]
+                if hasattr(model, "save_pretrained"):
+                    adapter_path = os.path.join(output_dir, "adapter")
+                    os.makedirs(adapter_path, exist_ok=True)
+                    model.save_pretrained(adapter_path)
+            if hasattr(train_dataloader, "state_dict"):
+                with open(os.path.join(output_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "wb") as f:
+                    pickle.dump([train_dataloader.state_dict(), epoch], f)
+            if weights:
+                weights.pop()
+
+        def load_model_hook(models, input_dir):
+            adapter_path = os.path.join(input_dir, "adapter")
+            if os.path.isdir(adapter_path):
+                model = accelerator.unwrap_model(models[0]) if hasattr(accelerator, "unwrap_model") else models[0]
+                if hasattr(model, "load_adapter"):
+                    model.load_adapter(adapter_path)
+                elif hasattr(model, "load_pretrained"):
+                    model.load_pretrained(adapter_path)
+                else:
+                    from safetensors.torch import load_file
+                    state = load_file(os.path.join(adapter_path, "adapter_model.safetensors"))
+                    (accelerator.unwrap_model(models[0]) if hasattr(accelerator, "unwrap_model") else models[0]).load_state_dict(state, strict=False)
+            pkl_path = os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl")
+            if os.path.exists(pkl_path):
+                with open(pkl_path, "rb") as f:
+                    state_dict, first_epoch = pickle.load(f)
+                    train_dataloader.load_state_dict(state_dict)
+                    log_once(logger, logging.INFO, "Load dataloader state and first_epoch=%s from %s", first_epoch, pkl_path)
+    elif fsdp_stage != 0:
         def save_model_hook(models, weights, output_dir):
             accelerate_state_dict = accelerator.get_state_dict(models[-1], unwrap=True)
             if accelerator.is_main_process:
@@ -261,20 +312,18 @@ def sft(
                 accelerate_state_dict = {k: v.to(dtype=weight_dtype) for k, v in accelerate_state_dict.items()}
                 save_file(accelerate_state_dict, safetensor_save_path, metadata={"format": "pt"})
 
-            if args.streaming:
-                with open(os.path.join(output_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "wb") as file:
-                    pickle.dump([train_dataloader.state_dict(), epoch], file)
+            with open(os.path.join(output_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "wb") as file:
+                pickle.dump([train_dataloader.state_dict(), epoch], file)
 
         def load_model_hook(models, input_dir):
-            if args.streaming:
-                with open(os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "rb") as file:
-                    state_dict, first_epoch = pickle.load(file)
-                    train_dataloader.load_state_dict(state_dict)
-                    log_once(logger, logging.INFO,
-                        "Load dataloader state dict and first_epoch=%s from %s",
-                        first_epoch,
-                        os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"),
-                    )
+            with open(os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "rb") as file:
+                state_dict, first_epoch = pickle.load(file)
+                train_dataloader.load_state_dict(state_dict)
+                log_once(logger, logging.INFO,
+                    "Load dataloader state dict and first_epoch=%s from %s",
+                    first_epoch,
+                    os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"),
+                )
     else:
         # create custom saving & loading hooks so that `accelerator.save_state(...)` serializes in a nice format
         def save_model_hook(models, weights, output_dir):
@@ -282,9 +331,8 @@ def sft(
                 models[0].save_pretrained(os.path.join(output_dir, "transformer"))
                 weights.pop()
 
-            if args.streaming:
-                with open(os.path.join(output_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "wb") as file:
-                    pickle.dump([train_dataloader.state_dict(), epoch], file)
+            with open(os.path.join(output_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "wb") as file:
+                pickle.dump([train_dataloader.state_dict(), epoch], file)
 
         def load_model_hook(models, input_dir):
             for i in range(len(models)):
@@ -300,15 +348,14 @@ def sft(
                 model.load_state_dict(load_model.state_dict())
                 del load_model
 
-            if args.streaming:
-                with open(os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "rb") as file:
-                    state_dict, first_epoch = pickle.load(file)
-                    train_dataloader.load_state_dict(state_dict)
-                    log_once(logger, logging.INFO,
-                        "Load dataloader state dict and first_epoch=%s from %s",
-                        first_epoch,
-                        os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"),
-                    )
+            with open(os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"), "rb") as file:
+                state_dict, first_epoch = pickle.load(file)
+                train_dataloader.load_state_dict(state_dict)
+                log_once(logger, logging.INFO,
+                    "Load dataloader state dict and first_epoch=%s from %s",
+                    first_epoch,
+                    os.path.join(input_dir, f"dataloader_{accelerator.process_index}_state_dict.pkl"),
+                )
                 
     accelerator.register_save_state_pre_hook(save_model_hook)
     accelerator.register_load_state_pre_hook(load_model_hook)
@@ -318,15 +365,16 @@ def sft(
     if accelerator.is_main_process:
         tracker_config = dict(vars(args))
         tracker_config.pop("validation_prompts", None)
-        tracker_config.pop("trainable_modules")
-        tracker_config.pop("trainable_modules_low_learning_rate")
+        tracker_config.pop("trainable_modules", None)
+        tracker_config.pop("trainable_modules_low_learning_rate", None)
         tracker_config.pop("fix_sample_size", None)
+        tracker_config.pop("lora_target_modules", None)
         accelerator.init_trackers(args.tracker_project_name, tracker_config)
 
     # ===================== 训练循环 =====================
     total_batch_size = args.train_batch_size * accelerator.num_processes * args.gradient_accumulation_steps
 
-    log_once(logger, logging.INFO, "***** Running training *****")
+    log_once(logger, logging.INFO, "***** Running %s *****", "LoRA training" if use_peft_lora else "training")
     log_once(logger, logging.INFO, "  Num Epochs = %s", args.num_train_epochs)
     log_once(logger, logging.INFO, "  Instantaneous batch size per device = %s", args.train_batch_size)
     log_once(logger, logging.INFO, "  Total train batch size (w. parallel, distributed & accumulation) = %s", total_batch_size)
@@ -391,10 +439,10 @@ def sft(
             if isinstance(batch, dict) and batch == {}:
                 log_once(logger, logging.WARNING, "Empty batch encountered; skipping.")
                 continue
-            if args.streaming:
-                for key, value in batch.items():
-                    if isinstance(value, torch.Tensor):
-                        batch[key] = value.to(accelerator.device)
+            
+            for key, value in batch.items():
+                if isinstance(value, torch.Tensor):
+                    batch[key] = value.to(accelerator.device)
 
             # Data batch sanity check
             if epoch == first_epoch and step == 0:
@@ -420,14 +468,14 @@ def sft(
             with accelerator.accumulate(transformer3d):
                 loss = forward_step(
                     args, 
+                    accelerator.process_index,
                     transformer3d, 
                     vae, 
                     text_encoder, 
                     extra_modules, 
                     batch, 
                     weight_dtype, 
-                    accelerator.device, 
-                    torch_rng
+                    accelerator.device,
                 )
 
                 # Gather the losses across all processes for logging (if we use distributed training).
@@ -503,7 +551,7 @@ def sft(
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
                         accelerator.save_state(save_path)
 
-                        log_once(logger, logging.INFO, "Saved state to %s", save_path)
+                        log_once(logger, logging.INFO, "Saved state%s to %s", " (adapter)" if use_peft_lora else "", save_path)
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
@@ -522,7 +570,7 @@ def sft(
         torch.cuda.ipc_collect()
         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
         accelerator.save_state(save_path)
-        log_once(logger, logging.INFO, "Saved state to %s", save_path)
+        log_once(logger, logging.INFO, "Saved state%s to %s", " (adapter)" if use_peft_lora else "", save_path)
 
     accelerator.end_training()
 
@@ -537,6 +585,8 @@ if __name__ == "__main__":
     from .arguments import parse_args
 
     args = parse_args()
+    if getattr(args, "use_peft_lora", False) and getattr(args, "lora_r", 0) <= 0:
+        raise ValueError("LoRA 训练请设置 --lora_r > 0")
     sft(
         data_provider_impl,
         model_provider_impl,

@@ -126,7 +126,7 @@ accelerate launch --mixed_precision="bf16" --use_fsdp \
 | `--train_data_weights` | Sampling weight per task, format: `task1=w1,task2=w2`; tasks not listed are excluded |
 | `--train_src_img_num_weights` | Weight by number of source images, format: `0=w0,1=w1,2=w2,3=w3` (0/1/2/3 source images) |
 
-Adjust dataset names and weights in `train_data_weights` as needed for your multi-dataset mix. More examples in `examples/train.sh`.
+Customize `train_data_weights` with your task names (same as the subdirectory names under `train_data_meta_dir`) and the sampling weights you want; only tasks listed here are included in training. For more runnable scripts see `examples/`; for the full list of training arguments see `src/arguments.py`.
 
 ---
 

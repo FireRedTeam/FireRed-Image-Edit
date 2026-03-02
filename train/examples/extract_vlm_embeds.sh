@@ -15,7 +15,7 @@ fi
 
 torchrun --nproc_per_node=$GPUS_PER_NODE --nnodes $NNODES --node_rank $NODE_RANK \
   --master_port $MASTER_PORT --master_addr $MASTER_ADDR \
-  src/extract_vlm_embeds.py \
+  -m src.extract_vlm_embeds \
   /path/to/your/data.jsonl \
   --output_jsonl_dir /path/to/output_jsonl \
   --embeddings_save_dir /path/to/embeddings \

@@ -201,7 +201,13 @@ def parse_args(extra_parser=None):
         default=2,
         help="每个 worker 预取的 sample 数",
     )
-    parser.add_argument("--sync_text_encoder", action="store_true", help="是否在 dataloader 内同步预计算 text encoder 输出，暂不支持")
+    parser.add_argument(
+        "--condition_encoder_mode",
+        type=str,
+        default="offline",
+        choices=["offline", "sync", "online"],
+        help="条件输入的 encoder 模式，可选 offline（离线编码） / sync（在线同步编码） / online（在线异步编码）"
+    )
     parser.add_argument("--enable_inverse", action="store_true", help="是否在数据集中启用 inverse captions")
 
     # ===================== VAE 与流水线 =====================
@@ -268,6 +274,42 @@ def parse_args(extra_parser=None):
 
     # ===================== 流式 / 其他 =====================
     parser.add_argument("--streaming", action="store_true", help="是否使用流式数据模式")
+
+    # ===================== LoRA（仅 lora.py 使用） =====================
+    parser.add_argument(
+        "--use_peft_lora", 
+        action="store_true", 
+        help="是否使用 PEFT LoRA 进行微调"
+    )
+    parser.add_argument(
+        "--lora_r", 
+        type=int, 
+        default=32, 
+        help="LoRA rank (推荐值: 8, 16, 32, 64)"
+    )
+    parser.add_argument(
+        "--lora_alpha", 
+        type=int, 
+        default=32, 
+        help="LoRA alpha scaling factor (通常设置为与 lora_r 相同或 2 倍)"
+    )
+    parser.add_argument(
+        "--lora_dropout", 
+        type=float, 
+        default=0.0, 
+        help="LoRA dropout rate"
+    )
+    parser.add_argument(
+        "--lora_target_modules", 
+        type=str, 
+        default="to_q,to_k,to_v,add_q_proj,add_k_proj,add_v_proj,to_out.0,to_add_out,img_mlp.net.2,img_mod.1,txt_mlp.net.2,txt_mod.1",
+        help="LoRA target modules, 逗号分隔. 默认参考 DiffSynth-Studio 的配置"
+    )
+    parser.add_argument(
+        "--lora_path", type=str, default=None, 
+        help="预训练 LoRA 权重路径 (用于继续训练或推理)"
+    )
+
 
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
