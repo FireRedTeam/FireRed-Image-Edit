@@ -75,13 +75,13 @@ Some real outputs produced by FireRed-Image-Edit across general editing.
     <img src="./assets/showcase_multi_fusion.png" width="800"/>
 <p> 
 
-### makeup
+### Makeup([Lora](https://huggingface.co/FireRedTeam/FireRed-Image-Edit-LoRA-Zoo/blob/main/FireRed-Image-Edit-Makeup.safetensors))
 <p align="center">
     <img src="./assets/showcase_makeup.png" width="800"/>
 <p> 
 
 
-### Text Style Reference
+### Text Style Reference([Lora](https://huggingface.co/FireRedTeam/FireRed-Image-Edit-LoRA-Zoo/blob/main/FireRed-Image-Edit-Covercraft.safetensors))
 <p align="center">
     <img src="./assets/showcase_mult_text.png" width="800"/>
 <p> 
@@ -113,7 +113,7 @@ Some real outputs produced by FireRed-Image-Edit across general editing.
         <td style="white-space: nowrap; padding: 8px; border: 1px solid #d0d7de;">Image-Editing</td>
         <td style="padding: 8px; border: 1px solid #d0d7de;">Distilled version of FireRed-Image-Edit-1.0 for faster inference</td>
         <td style="padding: 8px; border: 1px solid #d0d7de;">
-          <span style="white-space: nowrap;">🤗&nbsp;<a href="https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0-ComfyUI/blob/main/FireRed-Image-Edit-1.0-Lightning-8steps-v1.0.safetensors">HuggingFace</a></span>
+          <span style="white-space: nowrap;">🤗&nbsp;<a href="https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0-Lightning/blob/main/FireRed-Image-Edit-1.0-Lightning-8steps-v1.0.safetensors">HuggingFace</a></span>
         </td>
       </tr>
       <tr>
