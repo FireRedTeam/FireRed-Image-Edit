@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./assets/logo.png" width="300"/>
+    <img src="./assets/logo.png" width="400"/>
 <p> 
 <p align="center">
   <a href="https://huggingface.co/FireRedTeam" target="_blank"><img alt="Hugging Face" src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-FireRedTeam-ffc107?color=ffc107&logoColor=white" style="display: inline-block;"/></a>
@@ -13,13 +13,13 @@
 </p> 
 
 <p align="center">
-    🤗 <a href="https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0">HuggingFace</a> |
+    🤗 <a href="https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.1">HuggingFace</a> |
     🤖 <a href="https://modelscope.cn/models/FireRedTeam/FireRed-Image-Edit-1.0">ModelScope</a> |
-    🖥️ <a href="https://huggingface.co/spaces/FireRedTeam/FireRed-Image-Edit-1.0">Demo</a> |
+    🖥️ <a href="https://huggingface.co/spaces/FireRedTeam/FireRed-Image-Edit-1.1">Demo</a> |
     📄 <a href="https://arxiv.org/abs/2602.13344">Technical Report</a>
 </p>
 <p align="center">
-    <img src="./assets/teaser.png" width="600"/>
+    <img src="./assets/teaser.png" width="800"/>
 <p> 
 
 
@@ -33,7 +33,7 @@
 - 🆔 **State-of-the-Art Identity Consistency**: Open-source SOTA in character identity preservation, ensuring subjects remain recognizable across complex edits.
 - 🧩 **Multi-Element Fusion**: Freely combine 10+ elements with Agent-powered automatic cropping and stitching—no more struggles with short prompts.
 - 💄 **Comprehensive Portrait Makeup**: Dozens of styles from professional beauty retouching and yellow/olive skin tone brightening to Halloween witch makeup and creative looks.
-- 📝 ** Text Style Reference**: Maintains high-fidelity typography and stylized text comparable to closed-source solutions.
+- 📝 **Text Style Reference**: Maintains high-fidelity typography and stylized text comparable to closed-source solutions.
 - 🖼️ **Professional Photo Restoration**: High-quality old photo repair and enhancement with superior detail recovery.
 
 #### Ultimate Engineering Optimization
@@ -57,7 +57,7 @@
 ## 🏆 Evaluation Results
 FireRed-Image-Edit establishes a new state-of-the-art among open-source models on Imgedit, Gedit, and RedEdit, while surpassing our closed-source competitors in specific dimensions—a distinction further corroborated by human evaluations highlighting its superior prompt following and visual consistency. Detailed information can be found [here](docs/benchmark.md).
 <p align="center">
-    <img src="./assets/eval_benchmark.png" width="600"/>
+    <img src="./assets/eval_benchmark.png" width="800"/>
 <p>
 
 
@@ -66,24 +66,24 @@ Some real outputs produced by FireRed-Image-Edit across general editing.
 
 ### Portrait
 <p align="center">
-    <img src="./assets/showcase_portrait.png" width="700"/>
+    <img src="./assets/showcase_portrait.png" width="800"/>
 <p> 
 
 
 ### Multi-image-fusion
 <p align="center">
-    <img src="./assets/showcase_multi_fusion.png" width="700"/>
+    <img src="./assets/showcase_multi_fusion.png" width="800"/>
 <p> 
 
 ### makeup
 <p align="center">
-    <img src="./assets/showcase_makeup.png" width="600"/>
+    <img src="./assets/showcase_makeup.png" width="800"/>
 <p> 
 
 
 ### Text Style Reference
 <p align="center">
-    <img src="./assets/showcase_mult_text.png" width="700"/>
+    <img src="./assets/showcase_mult_text.png" width="800"/>
 <p> 
 
 ## 🗂️ Model Zoo
@@ -113,7 +113,7 @@ Some real outputs produced by FireRed-Image-Edit across general editing.
         <td style="white-space: nowrap; padding: 8px; border: 1px solid #d0d7de;">Image-Editing</td>
         <td style="padding: 8px; border: 1px solid #d0d7de;">Distilled version of FireRed-Image-Edit-1.0 for faster inference</td>
         <td style="padding: 8px; border: 1px solid #d0d7de;">
-          <span style="white-space: nowrap;">To be released</span>
+          <span style="white-space: nowrap;">🤗&nbsp;<a href="https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0-ComfyUI/blob/main/FireRed-Image-Edit-1.0-Lightning-8steps-v1.0.safetensors">HuggingFace</a></span>
         </td>
       </tr>
       <tr>
@@ -138,7 +138,7 @@ Some real outputs produced by FireRed-Image-Edit across general editing.
 
 ## 🏗️ Model Architecture
 <p align="center">
-    <img src="./assets/architecture.png" width="600"/>
+    <img src="./assets/architecture.png" width="800"/>
 <p> 
 
 ## ⚡️ Quick Start
