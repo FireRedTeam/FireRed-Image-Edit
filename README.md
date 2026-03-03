@@ -340,12 +340,12 @@ We kindly encourage citation of our work if you find it useful.
 
 ```bibtex
 @article{firered2026rededit,
-      title={FireRed-Image-Edit: A General-Purpose Image Editing Model}, 
+      title={FireRed-Image-Edit-1.0 Technical Report}, 
       author={Super Intelligence Team},
       year={2026},
       archivePrefix={arXiv},
       primaryClass={cs.CV},
-      url={https://arxiv.org/abs/xxxx.xxxxx}, 
+      url={https://arxiv.org/abs/2602.13344}, 
 }
 ```
 
