@@ -78,10 +78,17 @@ Some real outputs produced by FireRed-Image-Edit across general editing.
     <img src="./assets/showcase_multi_fusion.png" width="800"/>
 <p> 
 
+> case1: 将图2的男人，穿着图2的黑色"New York Bears"棒球夹克和迷彩裤子和蓝黑配色的AJ1高帮球鞋，在图1的空旷的橄榄球场上。球场阳光明媚，他带着图2黑色的帽子，帽檐是红色，夹克上的白色条纹在暗光中格外醒目。他的左肩随意地挎着图3那只复古棕色皮质旅行包，包口微微敞开，露出里面图3那个磨损的棕色橄榄球。右手则轻松地拖着图3的白色滑板，板底那威武的黑色狮子图腾在草地映衬下如同猛兽。图3那只壮实的深棕色斗牛犬安静地蹲坐在他脚边的阴影里，忠诚地望向主人。男人脖子上挂着图2那副黑色Beats耳机，地上放着图3那座复古的青铜奖杯，在阳光下下泛着胜利的光芒。整个场景融合了街头潮流与竞技体育的质感，空旷球场、皮革装备的温润光泽、以及滑板带来的街头气息，共同构成了一个关于青春、热爱与赛后孤独的静谧时刻。
+
+
 ### Makeup([Lora](https://huggingface.co/FireRedTeam/FireRed-Image-Edit-LoRA-Zoo/blob/main/FireRed-Image-Edit-Makeup.safetensors))
 <p align="center">
-    <img src="./assets/showcase_makeup.png" width="800"/>
+    <img src="./assets/showcase_makeup.jpg" width="800"/>
 <p> 
+
+> case1: 为人物添加欧美Y2K妆：使用冷白皮哑光粉底均匀肤色，描绘粗平的深棕色挑眉，眼部涂抹亮片银灰眼影并晕染至眉骨，画上黑色上扬眼线，粘贴浓密假睫毛，用浅金色高光提亮卧蚕，在苹果肌扫上蜜桃色腮红，唇部涂抹镜面玻璃唇釉，并在颧骨处轻扫修容粉。
+
+> case2: 为人物添加缎光底妆：使用自然色缎光粉底均匀肤色，描绘自然眉形并填充浅棕色眉粉，眼部涂抹深棕色眼影并晕染眼尾，画自然内眼线，刷上浓密睫毛膏，在卧蚕处提亮，涂抹水润感红色豆沙色口红并勾勒唇形，在苹果肌扫上粉色腮红，在鼻梁、颧骨处轻扫银色高光。
 
 
 ### Text Style Reference([Lora](https://huggingface.co/FireRedTeam/FireRed-Image-Edit-LoRA-Zoo/blob/main/FireRed-Image-Edit-Covercraft.safetensors))([More Case](docs/text.md))
