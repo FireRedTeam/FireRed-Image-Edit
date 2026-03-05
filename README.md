@@ -43,6 +43,7 @@
 - ⚡ **Extreme Speed Optimization**: Complete acceleration suite featuring distillation, quantization, and static compilation—delivering 4.5s end-to-end generation with just 30GB VRAM
 - 🤖 **Intelligent Agent Workflow**: Automatic multi-image processing handles complex compositions like virtual try-on without requiring lengthy prompt engineering
 - 🔌 **Universal Deployment**: Native ComfyUI node support and GGUF lightweight format compatibility for seamless production integration
+- 🏋️  **Efficient Training Methodology**: Offline feature pre-extraction completely decouples VLM inference from training workflow, eliminating generation overhead for maximum convergence speed.
 
 #### Native Editing Capability from T2I Backbone 
 - 🏗️ **Backbone-Agnostic Architecture**: Editing capabilities injected through full Pretrain → SFT → RL pipeline, transferable to any T2I foundation model.
