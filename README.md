@@ -125,7 +125,8 @@ Some real outputs produced by FireRed-Image-Edit across general editing.
         <td style="white-space: nowrap; padding: 8px; border: 1px solid #d0d7de;">Image-Editing</td>
         <td style="padding: 8px; border: 1px solid #d0d7de;">Distilled version of FireRed-Image-Edit-1.0 for faster inference</td>
         <td style="padding: 8px; border: 1px solid #d0d7de;">
-          <span style="white-space: nowrap;">🤗&nbsp;<a href="https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0-Lightning/blob/main/FireRed-Image-Edit-1.0-Lightning-8steps-v1.0.safetensors">HuggingFace</a></span>
+          <span style="white-space: nowrap;">🤗&nbsp;<a href="https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.0-Lightning">HuggingFace</a></span>
+          <span style="white-space: nowrap;">🤖&nbsp;<a href="https://modelscope.cn/models/FireRedTeam/FireRed-Image-Edit-1.0-Lightning">ModelScope</a></span>
         </td>
       </tr>
       <tr>
@@ -134,6 +135,7 @@ Some real outputs produced by FireRed-Image-Edit across general editing.
         <td style="padding: 8px; border: 1px solid #d0d7de;">Based on the FireRed-Image-Edit-1.0, it optimizes portrait consistency, multi-element fusion, stylized text reference, and portrait makeup effects.</td>
         <td style="padding: 8px; border: 1px solid #d0d7de;">
           <span style="white-space: nowrap;">🤗&nbsp;<a href="https://huggingface.co/FireRedTeam/FireRed-Image-Edit-1.1">HuggingFace</a></span>
+          <span style="white-space: nowrap;">🤖&nbsp;<a href="https://modelscope.cn/models/FireRedTeam/FireRed-Image-Edit-1.1">ModelScope</a></span>
         </td>
       </tr>
       <tr>
