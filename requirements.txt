@@ -6,3 +6,4 @@ google-generativeai
 tqdm
 cache_dit
 optimum-quanto
+openai  # Optional: required for MiniMax / OpenAI-compatible recaption providers

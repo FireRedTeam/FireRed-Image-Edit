@@ -1,4 +1,4 @@
-"""Recaption module – rewrite user instructions via Gemini.
+"""Recaption module – rewrite user instructions via a configurable LLM.
 
 After N images have been grouped into 2-3 composite images, the original
 references such as "图1", "图2", …, "image 3" no longer correspond to the
@@ -9,6 +9,11 @@ that:
 2. The instruction is expanded to ~512 words / characters (matching the
    user's language) to provide richer context for FireRed-Image-Edit.
 3. The user's original language is preserved (Chinese stays Chinese, etc.).
+
+The LLM backend is selected via the ``RECAPTION_PROVIDER`` environment
+variable.  Supported values: ``"gemini"`` (default),
+``"openai_compatible"``, ``"minimax"``.  See :mod:`agent.llm_provider` for
+details.
 """
 
 from __future__ import annotations
@@ -17,42 +22,13 @@ import re
 import time
 import traceback
 import warnings
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
-from agent.config import GEMINI_API_KEY, GEMINI_MODEL_NAME, RECAPTION_TARGET_LENGTH
-
-if TYPE_CHECKING:
-    import google.generativeai as genai
+from agent.config import RECAPTION_TARGET_LENGTH
 
 # Retry settings
 _MAX_RETRIES: int = 3
 _RETRY_BACKOFF: float = 2.0  # seconds, doubled each retry
-
-
-def _import_genai():
-    """Lazily import google.generativeai with a friendly error message."""
-    try:
-        import google.generativeai as _genai
-    except ImportError as exc:
-        raise ImportError(
-            "google-generativeai is required for recaption. "
-            "Install it with:  pip install google-generativeai"
-        ) from exc
-    return _genai
-
-
-def _init_gemini() -> Any:
-    """Lazily configure the Gemini SDK and return a model instance."""
-    genai = _import_genai()
-    genai.configure(api_key=GEMINI_API_KEY)
-    return genai.GenerativeModel(
-        model_name=GEMINI_MODEL_NAME,
-        generation_config={
-            "temperature": 0.4,
-            "max_output_tokens": 4096,
-            "top_p": 0.95,
-        },
-    )
 
 
 # ───────────────── simple reference mapping ──────────────────
@@ -224,12 +200,13 @@ def recaption(
     )
 
     try:
-        model = _init_gemini()
-    except ImportError:
+        from agent.llm_provider import get_recaption_provider
+
+        provider = get_recaption_provider()
+    except (ImportError, ValueError) as exc:
         warnings.warn(
-            "[Recaption] google-generativeai is not installed. "
-            "Skipping recaption and using the original prompt. "
-            "Install it with:  pip install google-generativeai",
+            f"[Recaption] Failed to initialise LLM provider: {exc!r}. "
+            "Skipping recaption and using the original prompt.",
             RuntimeWarning,
             stacklevel=2,
         )
@@ -240,13 +217,13 @@ def recaption(
     last_exc: Exception | None = None
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
-            response = model.generate_content(
-                [
-                    {"role": "user", "parts": [system_prompt + "\n\n" + user_prompt]},
-                ]
+            rewritten = provider.generate(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                temperature=0.4,
+                max_tokens=4096,
             )
-            rewritten = response.text.strip() if response.text else instruction_fixed
-            return rewritten
+            return rewritten if rewritten else instruction_fixed
         except Exception as exc:
             last_exc = exc
             traceback.print_exc()
@@ -260,7 +237,7 @@ def recaption(
 
     # All retries exhausted – warn and fall back to the original prompt.
     warnings.warn(
-        f"[Recaption] Gemini API call failed after {_MAX_RETRIES} attempts. "
+        f"[Recaption] LLM call failed after {_MAX_RETRIES} attempts. "
         f"Last error: {last_exc!r}. "
         f"Falling back to the original prompt for inference.",
         RuntimeWarning,
