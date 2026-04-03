@@ -3,10 +3,18 @@
 import os
 
 # ---------------------------------------------------------------------------
-# Gemini API
+# Gemini API (used for multimodal ROI detection; always requires Gemini)
 # ---------------------------------------------------------------------------
 GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL_NAME: str = os.environ.get("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+
+# ---------------------------------------------------------------------------
+# Recaption LLM provider (text-only instruction rewriting)
+# ---------------------------------------------------------------------------
+# Supported values: "gemini" (default), "openai_compatible", "minimax"
+# When set to "minimax", uses the OpenAI-compatible provider with MiniMax
+# defaults (base URL: https://api.minimax.io/v1, model: MiniMax-M2.7).
+RECAPTION_PROVIDER: str = os.environ.get("RECAPTION_PROVIDER", "gemini")
 
 # ---------------------------------------------------------------------------
 # Image stitching defaults

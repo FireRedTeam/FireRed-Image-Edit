@@ -186,13 +186,33 @@ FireRed-Image-Edit natively supports **1–3** input images. When users need to 
 3. **Recaption** – Rewrites the user instruction so that image references (图1/图2/image N …) correctly point to the new composite images, and expands the prompt to ~512 words/characters for richer editing context. The user's original language is preserved.
 
 
-**(Optional)** To enable the **Recaption** feature (rewriting instructions via Gemini for better editing results), set your Gemini API key:
+**(Optional)** To enable the **Recaption** feature (rewriting instructions via an LLM for better editing results), set up one of the supported LLM providers:
+
+**Option 1: Gemini (default)**
 
 ```bash
 export GEMINI_API_KEY="your-gemini-api-key"
 ```
 
-> **Note:** The Gemini API is **not required**. Without it, the Agent will still perform ROI detection and image stitching normally, but will skip the instruction rewriting step. Setting a Gemini API key is recommended for best results.
+**Option 2: MiniMax**
+
+```bash
+export RECAPTION_PROVIDER="minimax"
+export MINIMAX_API_KEY="your-minimax-api-key"
+```
+
+Uses the [MiniMax](https://www.minimax.io/) OpenAI-compatible API with the `MiniMax-M2.7` model by default. You can also use `MiniMax-M2.7-highspeed` for faster responses.
+
+**Option 3: Any OpenAI-compatible API**
+
+```bash
+export RECAPTION_PROVIDER="openai_compatible"
+export OPENAI_COMPATIBLE_API_KEY="your-api-key"
+export OPENAI_COMPATIBLE_BASE_URL="https://your-api.example.com/v1"
+export OPENAI_COMPATIBLE_MODEL="your-model-name"
+```
+
+> **Note:** The LLM API is **not required** for basic usage. Without it, the Agent will still perform ROI detection and image stitching normally, but will skip the instruction rewriting step. Setting an LLM API key is recommended for best results. The ROI detection step always uses Gemini (multimodal required).
 
 
 
